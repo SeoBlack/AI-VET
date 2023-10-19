@@ -22,6 +22,6 @@
 - Set python interpeter to your venv
 - Run code:
   ```
-  python embeddingLLM.py
+  python app.py
   ```
   
