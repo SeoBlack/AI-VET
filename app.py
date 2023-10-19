@@ -6,13 +6,19 @@ from langchain.prompts import (
 )
 from langchain.chat_models import ChatOpenAI
 from langchain.chains import LLMChain
-from langchain.memory import ConversationBufferMemory
+from langchain.memory import ConversationSummaryBufferMemory
 from dotenv import load_dotenv
 
 load_dotenv()
 
 
-systemMessage = "You are a helpful Vet Assistant who knows different kinds of pet problems and can diagnose them using provided symptyms."
+systemMessage = """You are a helpful Vet Assistant who knows different kinds of pet problems and can diagnose them using provided symptyms. Here are some roles you have to follow:
+    1.Ask the user for more details about there pet's symptyms if you are not sure. 
+    2.After you have gathered details about the user's pet's condistion, then you could give them your final diagnoses based on your knowledge.
+    3.Try to be as much accurate as possible in your diagnoses, doesn't matter hou many questions you ask.
+
+
+"""
 
 
 
@@ -30,8 +36,8 @@ class LLMChat:
             HumanMessagePromptTemplate.from_template("{question}") # the user question 
             ]
         )
-        self.memory= ConversationBufferMemory(memory_key='history',return_messages=True) #
-        self.conversationChain = LLMChain(llm=self.llm,verbose=True,memory=self.memory,prompt=self.prompt)
+        self.memory= ConversationSummaryBufferMemory(memory_key='history',max_token_limit=100,return_messages=True,llm=self.llm) #
+        self.conversationChain = LLMChain(llm=self.llm,memory=self.memory,prompt=self.prompt,verbose=True)#verbose True for development purpose only.
 
     def conversation(self, question):
         response = self.conversationChain({'question':question})
