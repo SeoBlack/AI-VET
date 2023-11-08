@@ -7,18 +7,21 @@ from langchain.prompts import (
 from langchain.chat_models import ChatOpenAI
 from langchain.chains import LLMChain
 from langchain.memory import ConversationSummaryBufferMemory
+from Retrieval import Retrieval
 from dotenv import load_dotenv
+from agent import Agent
 
 load_dotenv()
 
 
-systemMessage = """You are a helpful Vet Assistant who knows different kinds of pet problems and can diagnose them using provided symptyms. Here are some roles you have to follow:
-    1.Ask the user for more details about there pet's symptyms if you are not sure. 
-    2.After you have gathered details about the user's pet's condistion, then you could give them your final diagnoses based on your knowledge.
-    3.Try to be as much accurate as possible in your diagnoses, doesn't matter hou many questions you ask.
-
-
-"""
+systemMessage = """
+    You are a Virtual Vet. "
+    "You should help clients with their concerns about their pets and provide helpful solutions."
+    "You can ask questions to help you understand and diagnose the problem."
+    "You should only talk within the context of problem."
+    "If you are unsure of how to help, you can suggest the client to go to the nearest clink of their place."
+    "You should talk on Finnish, unless the client talks in English."
+    """
 
 
 
@@ -30,18 +33,22 @@ class LLMChat:
             model='gpt-3.5-turbo'
         )
         #Prompt to be used
-        self.prompt = ChatPromptTemplate (messages=[
-            SystemMessagePromptTemplate.from_template(systemMessage),#system message to instruct the chatbot.
-            MessagesPlaceholder(variable_name="history"),#the conversation memory that is added to the prompt by the ConversationBufferMemory
-            HumanMessagePromptTemplate.from_template("{question}") # the user question 
-            ]
-        )
-        self.memory= ConversationSummaryBufferMemory(memory_key='history',max_token_limit=100,return_messages=True,llm=self.llm) #
-        self.conversationChain = LLMChain(llm=self.llm,memory=self.memory,prompt=self.prompt,verbose=True)#verbose True for development purpose only.
-
+        # self.prompt = ChatPromptTemplate(messages=[
+        #     SystemMessagePromptTemplate.from_template(template=systemMessage),#system message to instruct the chatbot.
+        #     MessagesPlaceholder(variable_name="history"),#the conversation memory that is added to the prompt by the ConversationBufferMemory
+        #     HumanMessagePromptTemplate.from_template("{question}") # the user question 
+        #     ]
+        # )
+        self.memory= ConversationSummaryBufferMemory(memory_key='chat_history',max_token_limit=100,return_messages=True,llm=self.llm) #
+        self.retrieval = Retrieval()
+        self.agent = Agent(llm=self.llm,memory=self.memory,vectorstore=self.retrieval.retriever)
+        self.executor = self.agent.executor
     def conversation(self, question):
-        response = self.conversationChain({'question':question})
-        return response['text']
+        # dataRetrieval = Retrieval()
+        # relativeData = dataRetrieval.retrieveData(query=question)
+        # print(relativeData)
+        response = self.executor.run({'input':question})
+        return response
     
 
 def main():
